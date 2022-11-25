@@ -88,6 +88,13 @@ async function run() {
             res.send(result);
         });
 
+        //get recently added product data
+        app.get('/recentlyadded', async(req, res) => {
+            const query = {};
+            const result = await productsCollection.find(query).limit(4).toArray();
+            res.send(result);
+        });
+
         //jwt sign
         app.get('/jwt', async (req, res) => {
             const email = req.query.email;
