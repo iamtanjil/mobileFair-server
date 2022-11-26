@@ -26,7 +26,7 @@ function verifyJWT(req, res, next) {
     }
 
     const token = authHeader.split(' ')[1];
-
+    console.log(token)
     jwt.verify(token, process.env.ACCESS_TOKEN, function (err, decoded) {
         if (err) {
             return res.status(403).send({ message: 'forbidden access' })
@@ -43,6 +43,7 @@ async function run() {
         const usersCollection = client.db("mobileFair").collection("users");
         const productsCollection = client.db("mobileFair").collection("products");
         const categorysCollection = client.db("mobileFair").collection("category");
+        const bookingsCollection = client.db("mobileFair").collection("bookings");
 
 
         //send user data
@@ -103,6 +104,23 @@ async function run() {
             res.send(result);
         });
 
+        
+        //send bookings data to db
+        app.post('/bookings', async(req, res) => {
+            const bookings = req.body;
+            const query = {
+                buyerEmail: bookings.buyerEmail
+            }
+            const alreadyBooked = await bookingsCollection.find(query).toArray();
+            if(alreadyBooked.length){
+                const message = `You already book this item`;
+                return res.send({ acknowledged: false, message })
+            }
+            const result = await bookingsCollection.insertOne(bookings);
+            res.send(result);
+        });
+
+
         //get product data by category
         app.get('/products/:category', async(req, res) => {
             const category = req.params.category;
@@ -111,6 +129,14 @@ async function run() {
             const result = await productsCollection.find(query).toArray();
             res.send(result);
         });
+
+        //get sellers orders data
+        app.get('/dashboard/myorders', async(req, res) => {
+          const email = req.query.email;
+          const query = {buyerEmail: email};
+          const result = await bookingsCollection.find(query).toArray();
+          res.send(result)
+        })
 
         //jwt sign
         app.get('/jwt', async (req, res) => {
@@ -123,6 +149,7 @@ async function run() {
             }
             res.status(403).send({ accessToken: '' })
         });
+
 
 
     }
