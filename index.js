@@ -101,7 +101,16 @@ async function run() {
             const query = {};
             const result = await categorysCollection.find(query).toArray();
             res.send(result);
-        })
+        });
+
+        //get product data by category
+        app.get('/products/:category', async(req, res) => {
+            const category = req.params.category;
+            const query = {brandName: category};
+            console.log(query);
+            const result = await productsCollection.find(query).toArray();
+            res.send(result);
+        });
 
         //jwt sign
         app.get('/jwt', async (req, res) => {
