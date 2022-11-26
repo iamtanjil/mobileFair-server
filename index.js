@@ -133,10 +133,19 @@ async function run() {
         //get sellers orders data
         app.get('/dashboard/myorders', async(req, res) => {
           const email = req.query.email;
-          const query = {buyerEmail: email};
+          const query = {sellerEmail: email};
           const result = await bookingsCollection.find(query).toArray();
           res.send(result)
-        })
+        });
+
+        //get product data
+        app.get('/dashboard/myproduct', async(req, res) => {
+            const email = req.query.email;
+            const query = {sellerEmail: email};
+            const result = await productsCollection.find(query).toArray();
+            res.send(result);
+        });
+        
 
         //jwt sign
         app.get('/jwt', async (req, res) => {
