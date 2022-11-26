@@ -44,6 +44,7 @@ async function run() {
         const productsCollection = client.db("mobileFair").collection("products");
         const categorysCollection = client.db("mobileFair").collection("category");
         const bookingsCollection = client.db("mobileFair").collection("bookings");
+        const feedbackCollection = client.db("mobileFair").collection("feedback");
 
 
         //send user data
@@ -145,7 +146,13 @@ async function run() {
             const result = await productsCollection.find(query).toArray();
             res.send(result);
         });
-        
+
+        //post feedback data
+        app.post('/feedback', async(req, res) => {
+            const feedback = req.body;
+            const result = await feedbackCollection.insertOne(feedback);
+            res.send(result);
+        });
 
         //jwt sign
         app.get('/jwt', async (req, res) => {
