@@ -26,7 +26,6 @@ function verifyJWT(req, res, next) {
     }
 
     const token = authHeader.split(' ')[1];
-    console.log(token)
     jwt.verify(token, process.env.ACCESS_TOKEN, function (err, decoded) {
         if (err) {
             return res.status(403).send({ message: 'forbidden access' })
@@ -45,6 +44,18 @@ async function run() {
         const categorysCollection = client.db("mobileFair").collection("category");
         const bookingsCollection = client.db("mobileFair").collection("bookings");
         const feedbackCollection = client.db("mobileFair").collection("feedback");
+
+        //verify admin
+        const verifyAdmin = async (req, res, next) => {
+            const decodedEmail = req.decoded.email;
+            const query = { email: decodedEmail };
+            const user = await usersCollection.findOne(query);
+
+            if (user.role !== 'admin') {
+                return res.status(403).send({ message: 'forbiden access' })
+            }
+            next();
+        };
 
 
         //send user data
@@ -91,7 +102,33 @@ async function run() {
             res.send({ isAdmin: user?.role === 'admin' })
         });
 
-        
+        //set seller role
+        app.put('/seller/:id', verifyJWT, async (req, res) => {
+            const decodedEmail = req.decoded.email;
+            const query = { email: decodedEmail };
+            const user = await usersCollection.findOne(query);
+
+            if (user.role !== 'admin') {
+                return res.status(403).send({ message: 'forbiden access' })
+            }
+            const id = req.params.id;
+            const filter = { _id: ObjectId(id) };
+            const option = { uspert: true };
+            const updatedDoc = {
+                $set: {
+                    role: 'seller'
+                }
+            };
+            const result = await usersCollection.updateOne(filter, updatedDoc, option);
+            res.send(result);
+        });
+
+        //load all seller data
+        app.get('/dashboard/sellers', async(req, res) => {
+            const query = {role: 'seller'};
+            const result = await usersCollection.find(query).toArray();
+            res.send(result);
+        });
 
         //send products data to db
         app.post('/products', async (req, res) => {
