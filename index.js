@@ -154,6 +154,13 @@ async function run() {
             res.send(result);
         });
 
+        //get feedback data
+        app.get('/feedback', async(req, res) => {
+            const query = {};
+            const result = await feedbackCollection.find(query).toArray();
+            res.send(result);
+        });
+
         //jwt sign
         app.get('/jwt', async (req, res) => {
             const email = req.query.email;
