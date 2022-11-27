@@ -63,7 +63,7 @@ async function run() {
         });
 
         //make admin
-        app.put('/users/:id',verifyJWT, async (req, res) => {
+        app.put('/users/:id', verifyJWT, async (req, res) => {
             const decodedEmail = req.decoded.email;
             const query = { email: decodedEmail };
             const user = await usersCollection.findOne(query);
@@ -83,37 +83,46 @@ async function run() {
             res.send(result);
         });
 
+        //get admin status
+        app.get('/users/admin/:email', async (req, res) => {
+            const email = req.params.email;
+            const query = { email };
+            const user = await usersCollection.findOne(query);
+            res.send({ isAdmin: user?.role === 'admin' })
+        });
+
+        
 
         //send products data to db
-        app.post('/products', async(req, res) => {
+        app.post('/products', async (req, res) => {
             const products = req.body;
             const result = await productsCollection.insertOne(products);
             res.send(result);
         });
 
         //get recently added product data
-        app.get('/recentlyadded', async(req, res) => {
+        app.get('/recentlyadded', async (req, res) => {
             const query = {};
             const result = await productsCollection.find(query).limit(4).toArray();
             res.send(result);
         });
 
         //get category data
-        app.get('/category', async(req, res) => {
+        app.get('/category', async (req, res) => {
             const query = {};
             const result = await categorysCollection.find(query).toArray();
             res.send(result);
         });
 
-        
+
         //send bookings data to db
-        app.post('/bookings', async(req, res) => {
+        app.post('/bookings', async (req, res) => {
             const bookings = req.body;
             const query = {
                 buyerEmail: bookings.buyerEmail
             }
             const alreadyBooked = await bookingsCollection.find(query).toArray();
-            if(alreadyBooked.length){
+            if (alreadyBooked.length) {
                 const message = `You already book this item`;
                 return res.send({ acknowledged: false, message })
             }
@@ -123,48 +132,48 @@ async function run() {
 
 
         //get product data by category
-        app.get('/products/:category', async(req, res) => {
+        app.get('/products/:category', async (req, res) => {
             const category = req.params.category;
-            const query = {brandName: category};
+            const query = { brandName: category };
             console.log(query);
             const result = await productsCollection.find(query).toArray();
             res.send(result);
         });
 
         //get sellers orders data
-        app.get('/dashboard/myorders', async(req, res) => {
-          const email = req.query.email;
-          const query = {sellerEmail: email};
-          const result = await bookingsCollection.find(query).toArray();
-          res.send(result)
+        app.get('/dashboard/myorders', async (req, res) => {
+            const email = req.query.email;
+            const query = { sellerEmail: email };
+            const result = await bookingsCollection.find(query).toArray();
+            res.send(result)
         });
 
         //get product data
-        app.get('/dashboard/myproduct', async(req, res) => {
+        app.get('/dashboard/myproduct', async (req, res) => {
             const email = req.query.email;
-            const query = {sellerEmail: email};
+            const query = { sellerEmail: email };
             const result = await productsCollection.find(query).toArray();
             res.send(result);
         });
 
         //post feedback data
-        app.post('/feedback', async(req, res) => {
+        app.post('/feedback', async (req, res) => {
             const feedback = req.body;
             const result = await feedbackCollection.insertOne(feedback);
             res.send(result);
         });
 
         //get feedback data
-        app.get('/feedback', async(req, res) => {
+        app.get('/feedback', async (req, res) => {
             const query = {};
             const result = await feedbackCollection.find(query).toArray();
             res.send(result);
         });
 
         //get orders data for user
-        app.get('/dashboard/orders', async(req, res) => {
+        app.get('/dashboard/orders', async (req, res) => {
             const email = req.query.email;
-            const query = {buyerEmail: email};
+            const query = { buyerEmail: email };
             const result = await bookingsCollection.find(query).toArray();
             res.send(result);
         });
