@@ -123,6 +123,28 @@ async function run() {
             res.send(result);
         });
 
+
+        //set seller verification
+        app.put('/seller/verification/:id', verifyJWT, async (req, res) => {
+            const decodedEmail = req.decoded.email;
+            const query = { email: decodedEmail };
+            const user = await usersCollection.findOne(query);
+
+            if (user.role !== 'admin') {
+                return res.status(403).send({ message: 'forbiden access' })
+            }
+            const id = req.params.id;
+            const filter = { _id: ObjectId(id) };
+            const option = { uspert: true };
+            const updatedDoc = {
+                $set: {
+                    verifiedSeller: "yes"
+                }
+            };
+            const result = await usersCollection.updateOne(filter, updatedDoc, option);
+            res.send(result);
+        });
+
         //get seller status
         app.get('/users/seller/:email', async (req, res) => {
             const email = req.params.email;
@@ -130,6 +152,17 @@ async function run() {
             const user = await usersCollection.findOne(query);
             res.send({ isSeller: user?.role === 'seller' })
         });
+
+
+        //get seller verification status
+        app.get('/users/seller/verification/:email', async (req, res) => {
+            const email = req.params.email;
+            const query = { email };
+            const user = await usersCollection.findOne(query);
+            res.send({ isVerified: user?.verifiedSeller === 'yes' })
+        });
+
+
         //get users status
         app.get('/users/user/:email', async (req, res) => {
             const email = req.params.email;
@@ -147,8 +180,8 @@ async function run() {
         });
 
         //load all seller data
-        app.get('/dashboard/sellers', async(req, res) => {
-            const query = {role: 'seller'};
+        app.get('/dashboard/sellers', async (req, res) => {
+            const query = { role: 'seller' };
             const result = await usersCollection.find(query).toArray();
             res.send(result);
         });
@@ -159,6 +192,22 @@ async function run() {
             const result = await productsCollection.insertOne(products);
             res.send(result);
         });
+
+        // //send seller verification status
+        // app.put('/dashboard/seller/verification/:email', async (req, res) => {
+        //     const email = req.params.email;
+        //     console.log(email);
+        //     const filter = { email: email }
+        //     const option = { upsert: true }
+        //     const updatedDoc = {
+        //         $set: {
+        //             isVerified: true
+        //         }
+        //     };
+
+        //     const result = await usersCollection.updateOne(filter, updatedDoc, option);
+        //     res.send(result);
+        // });
 
         //get recently added product data
         app.get('/recentlyadded', async (req, res) => {
