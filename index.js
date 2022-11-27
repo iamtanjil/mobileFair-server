@@ -123,6 +123,29 @@ async function run() {
             res.send(result);
         });
 
+        //get seller status
+        app.get('/users/seller/:email', async (req, res) => {
+            const email = req.params.email;
+            const query = { email };
+            const user = await usersCollection.findOne(query);
+            res.send({ isSeller: user?.role === 'seller' })
+        });
+        //get users status
+        app.get('/users/user/:email', async (req, res) => {
+            const email = req.params.email;
+            const query = { email };
+            const user = await usersCollection.findOne(query);
+            res.send({ isUser: user?.role === 'user' })
+        });
+
+        //handle deleting user
+        app.delete('/manageuser/:id', async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: ObjectId(id) }
+            const result = await usersCollection.deleteOne(filter);
+            res.send(result);
+        });
+
         //load all seller data
         app.get('/dashboard/sellers', async(req, res) => {
             const query = {role: 'seller'};
