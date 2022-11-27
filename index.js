@@ -161,6 +161,14 @@ async function run() {
             res.send(result);
         });
 
+        //get orders data for user
+        app.get('/dashboard/orders', async(req, res) => {
+            const email = req.query.email;
+            const query = {buyerEmail: email};
+            const result = await bookingsCollection.find(query).toArray();
+            res.send(result);
+        });
+
         //jwt sign
         app.get('/jwt', async (req, res) => {
             const email = req.query.email;
