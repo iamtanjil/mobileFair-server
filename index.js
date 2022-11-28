@@ -13,6 +13,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
 
 const uri = `mongodb+srv://${process.env.DB_User}:${process.env.DB_Pass}@cluster0.ty2hcly.mongodb.net/?retryWrites=true&w=majority`;
@@ -44,6 +45,8 @@ async function run() {
         const categorysCollection = client.db("mobileFair").collection("category");
         const bookingsCollection = client.db("mobileFair").collection("bookings");
         const feedbackCollection = client.db("mobileFair").collection("feedback");
+        const wishlistsCollection = client.db("mobileFair").collection("wishlists");
+        const paymentsCollection = client.db("mobileFair").collection("payments");
 
         //verify admin
         const verifyAdmin = async (req, res, next) => {
@@ -163,6 +166,7 @@ async function run() {
         });
 
 
+
         //get users status
         app.get('/users/user/:email', async (req, res) => {
             const email = req.params.email;
@@ -193,22 +197,6 @@ async function run() {
             res.send(result);
         });
 
-        // //send seller verification status
-        // app.put('/dashboard/seller/verification/:email', async (req, res) => {
-        //     const email = req.params.email;
-        //     console.log(email);
-        //     const filter = { email: email }
-        //     const option = { upsert: true }
-        //     const updatedDoc = {
-        //         $set: {
-        //             isVerified: true
-        //         }
-        //     };
-
-        //     const result = await usersCollection.updateOne(filter, updatedDoc, option);
-        //     res.send(result);
-        // });
-
         //get recently added product data
         app.get('/recentlyadded', async (req, res) => {
             const query = {};
@@ -228,9 +216,11 @@ async function run() {
         app.post('/bookings', async (req, res) => {
             const bookings = req.body;
             const query = {
-                buyerEmail: bookings.buyerEmail
+                buyerEmail: bookings.buyerEmail,
+                productId: bookings.productId
             }
             const alreadyBooked = await bookingsCollection.find(query).toArray();
+            
             if (alreadyBooked.length) {
                 const message = `You already book this item`;
                 return res.send({ acknowledged: false, message })
@@ -244,7 +234,6 @@ async function run() {
         app.get('/products/:category', async (req, res) => {
             const category = req.params.category;
             const query = { brandName: category };
-            console.log(query);
             const result = await productsCollection.find(query).toArray();
             res.send(result);
         });
@@ -287,6 +276,22 @@ async function run() {
             res.send(result);
         });
 
+        //get wishlist data
+        app.get('/wishlists/:id', async(req, res) => {
+            const id = req.params.id;
+            const query = {_id: ObjectId(id)}
+            const result = await productsCollection.findOne(query);
+            res.send(result)
+        })
+
+
+        //post wishlist data
+        app.post('/wishlists', async(req, res) => {
+            const wishlist = req.body;
+            const result = await wishlistsCollection.insertOne(wishlist);
+            res.send(result)
+        });
+
         //jwt sign
         app.get('/jwt', async (req, res) => {
             const email = req.query.email;
@@ -299,7 +304,47 @@ async function run() {
             res.status(403).send({ accessToken: '' })
         });
 
+        //get booking data
+        app.get('/payments/:id', async(req, res) => {
+            const id = req.params.id;
+            const query = {_id: ObjectId(id)};
+            const result = await bookingsCollection.findOne(query);
+            res.send(result);
+        })
 
+        //stripe payments intent
+        app.post('/create-payment-intent', async(req, res) => {
+            const booking = req.body;
+            const price = booking.offeringPrice;
+            const amount = price * 100;
+
+            const paymentIntent = await stripe.paymentIntents.create({
+                currency: "usd",
+                amount: amount,
+                "payment_method_types": [
+                    "card"
+                  ],
+            });
+            res.send({
+                clientSecret: paymentIntent.client_secret,
+              });
+        });
+
+        //create payment and update db collection
+        app.post('/payments', async(req, res) => {
+            const payments = req.body;
+            const result = await paymentsCollection.insertOne(payments);
+            const id = payments.bookingId;
+            const filter = {_id: ObjectId(id)};
+            const updatedDoc = {
+                $set: {
+                    paid: true,
+                    transactionId: payments.transactionId
+                }
+            };
+            const updatedResult = await bookingsCollection.updateOne(filter, updatedDoc)
+            res.send(result);
+        });
 
     }
     finally {
